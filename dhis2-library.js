@@ -15,6 +15,27 @@ angular.module('iroad-relation-modal', [])
         });
         var iRoadModal = {
             programs:[],
+            dataElements:[],
+            /**
+             * Get the Modal name
+             *
+             * @return string modal name
+             */
+            getDataElements: function () {
+                var deffered = $q.defer();
+                if(this.dataElements.length > 0){
+                    deffered.resolve(this.dataElements);
+                }else{
+                    var self = this;
+                    $http.get("/" + dhis2.settings.baseUrl + "/api/dataElements.json?fields=id,name,displayName,valueType&paging=false").then(function (result) {
+                        self.dataElements = result.data.dataElements;
+                        deffered.resolve(self.dataElements);
+                    }, function (error) {
+                        deffered.reject(error);
+                    });
+                }
+                return deffered.promise;
+            },
             /**
              * Get the Modal name
              *
@@ -36,14 +57,6 @@ angular.module('iroad-relation-modal', [])
                 return deffered.promise;
             },
             /**
-             * Get the Modal name
-             *
-             * @return string modal name
-             */
-            getModalName: function () {
-                return modalName;
-            },
-            /**
              * Get a program from the list of dhis2 programs by its name
              *
              * @param string name
@@ -57,6 +70,25 @@ angular.module('iroad-relation-modal', [])
                     for (i = 0; i < programs.length; i++) {
                         if (programs[i].name == name) {
                             deffered.resolve(programs[i]);
+                        }
+                    }
+                });
+                return deffered.promise;
+            },
+            /**
+             * Get a program from the list of dhis2 programs by its name
+             *
+             * @param string name
+             *
+             * @return Program
+             */
+            getDataElementByName: function (name) {
+                var deffered = $q.defer();
+                this.getDataElements().then(function(dataElements){
+                    name = name.replace("_", " ");
+                    for (i = 0; i < dataElements.length; i++) {
+                        if (dataElements[i].name == name) {
+                            deffered.resolve(dataElements[i]);
                         }
                     }
                 });
