@@ -47,7 +47,7 @@ angular.module('iroad-relation-modal', [])
                     deffered.resolve(this.programs);
                 }else{
                     var self = this;
-                    $http.get("/" + dhis2.settings.baseUrl + "/api/programs.json?fields=id,name,displayName&paging=false").then(function (result) {
+                    $http.get("/" + dhis2.settings.baseUrl + "/api/programs.json?fields=id,name,displayName,programStages[programStageDataElements[sortOrder,compulsory,dataElement[id,name,valueType,optionSetValue,optionSet[id,name,valueType,options[id,name]],attributeValues[:all]]]]&paging=false").then(function (result) {
                         self.programs = result.data.programs;
                         deffered.resolve(self.programs);
                     }, function (error) {
@@ -195,7 +195,6 @@ angular.module('iroad-relation-modal', [])
                 //Get events of the program from the server
                 $http.get("/" + dhis2.settings.baseUrl + "/api/events/" + uid + ".json").then(function (result) {
                     //Render to entity column json
-                    console.log(result);
                     self.renderToJSON(result.data).then(function (object) {
                         deffered.resolve(object);
                     });
@@ -206,7 +205,6 @@ angular.module('iroad-relation-modal', [])
             },
             setValue:function(object,dataElement,value){
                 return this.find(value).then(function (result) {
-                    console.log("Being Set:",dataElement);
                     //Set the field in the json
                     object[dataElement] = result;
                 }, function (error) {
