@@ -1,21 +1,29 @@
 angular.module('iroad-relation-modal', [])
     .factory("iRoadModal", function ($http, $q) {
-        //var programs = [];
-        var dataElements = [];
         var refferencePrefix = "Program_";
-        (function fetchPrograms(){
-
-        })();
-
-        $http.get("/" + dhis2.settings.baseUrl + "/api/dataElements.json?fields=id,name,displayName&paging=false").then(function (result) {
-            dataElements = result.data.dataElements;
-            console.log("DataElements:", dataElements);
-        }, function (error) {
-
-        });
         var iRoadModal = {
             programs:[],
             dataElements:[],
+            /**
+             * Get the Modal name
+             *
+             * @return string modal name
+             */
+            getUser: function () {
+                var deffered = $q.defer();
+                if(this.user){
+                    deffered.resolve(this.user);
+                }else{
+                    var self = this;
+                    $http.get("/" + dhis2.settings.baseUrl + "/api/me.json").then(function (result) {
+                        self.user = result.data;
+                        deffered.resolve(self.user);
+                    }, function (error) {
+                        deffered.reject(error);
+                    });
+                }
+                return deffered.promise;
+            },
             /**
              * Get the Modal name
              *
@@ -47,7 +55,7 @@ angular.module('iroad-relation-modal', [])
                     deffered.resolve(this.programs);
                 }else{
                     var self = this;
-                    $http.get("/" + dhis2.settings.baseUrl + "/api/programs.json?fields=id,name,displayName,programStages[programStageDataElements[sortOrder,compulsory,dataElement[id,name,valueType,optionSetValue,optionSet[id,name,valueType,options[id,name]],attributeValues[:all]]]]&paging=false").then(function (result) {
+                    $http.get("/" + dhis2.settings.baseUrl + "/api/programs.json?fields=id,name,displayName,programStages[programStageDataElements[sortOrder,compulsory,dataElement[id,name,valueType,optionSetValue,optionSet[id,name,valueType,options[id,name]],attributeValues[:all,attribute[id,name]]]]]&paging=false").then(function (result) {
                         self.programs = result.data.programs;
                         deffered.resolve(self.programs);
                     }, function (error) {
@@ -67,11 +75,13 @@ angular.module('iroad-relation-modal', [])
                 var deffered = $q.defer();
                 this.getPrograms().then(function(programs){
                     name = name.replace("_", " ");
-                    for (i = 0; i < programs.length; i++) {
+                    for (var i = 0; i < programs.length; i++) {
                         if (programs[i].name == name) {
                             deffered.resolve(programs[i]);
+                            return;
                         }
                     }
+                    deffered.reject({status:"Program Unknown",title:"Program Unknown",message:"The program with name "+name+" specified does not exist."});
                 });
                 return deffered.promise;
             },
@@ -89,8 +99,10 @@ angular.module('iroad-relation-modal', [])
                     for (i = 0; i < dataElements.length; i++) {
                         if (dataElements[i].name == name) {
                             deffered.resolve(dataElements[i]);
+                            return;
                         }
                     }
+                    deffered.reject({title:"Data Element Unknown",status:"Data Element Unknown",message:"The data element with name "+name+" specified does not exist."});
                 });
                 return deffered.promise;
             },
@@ -102,11 +114,18 @@ angular.module('iroad-relation-modal', [])
              * @return dataElement
              */
             getDataElement: function (id) {
-                for (i = 0; i < dataElements.length; i++) {
-                    if (dataElements[i].id == id) {
-                        return dataElements[i];
+                var deffered = $q.defer();
+                this.getDataElements().then(function(dataElements){
+                    name = name.replace("_", " ");
+                    for (i = 0; i < dataElements.length; i++) {
+                        if (dataElements[i].id == id) {
+                            deffered.resolve(dataElements[i]);
+                            return;
+                        }
                     }
-                }
+                    deffered.reject({title:"Data Element Unknown",status:"Data Element Unknown",message:"The data element with id "+id+" specified does not exist."});
+                });
+                return deffered.promise;
             },
             /**
              * Gets all rows of a program
@@ -115,6 +134,7 @@ angular.module('iroad-relation-modal', [])
              *
              */
             getAll: function (modalName,params) {
+                console.log("Modal name:",modalName);
                 var self = this;
                 var deffered = $q.defer();
                 var promises = [];
@@ -203,13 +223,25 @@ angular.module('iroad-relation-modal', [])
                 });
                 return deffered.promise;
             },
-            setValue:function(object,dataElement,value){
-                return this.find(value).then(function (result) {
-                    //Set the field in the json
-                    object[dataElement] = result;
-                }, function (error) {
-                    console.log(error)
-                })
+            setValue:function(object,dataValue){
+                var self = this;
+                var deffered = $q.defer();
+                this.getDataElement(dataValue.dataElement).then(function(dataElement){
+                    if (!dataElement.name.startsWith(refferencePrefix)) {//If dataElement is not a foregin key
+                        //Set the value in the object
+                        object[dataElement.name] = dataValue.value;
+                        deffered.resolve(object);
+                    } else {
+                        self.find(dataValue.value).then(function (result) {
+                            //Set the field in the json
+                            object[dataElement.name] = result;
+                            deffered.resolve(object);
+                        }, function (error) {
+                            deffered.resolve(error);
+                        })
+                    }
+                });
+                return deffered.promise;
             },
             renderToJSON: function (event, relations) {
                 var self = this;
@@ -219,31 +251,11 @@ angular.module('iroad-relation-modal', [])
                 this.object = {};
                 this.object["id"] = event.event;
 
-                for (k = 0; k < event.dataValues.length; k++) {
-
-                    var dataValue = event.dataValues[k];
-                    var dataElement = self.getDataElement(dataValue.dataElement);
-                    if (!dataElement.name.startsWith(refferencePrefix)) {//If dataElement is not a foregin key
-                        //Set the value in the object
-                        this.object[dataElement.name] = dataValue.value;
-                    } else {//If dataElement is a foregin key fetch the refferencing program
-                        console.log("To set:",dataElement.name);
-                        //Remove the refferencePrefix prefix to get the program for reffencing
-                        var program = dataElement.name.substring(refferencePrefix.length);
-                        //Initialize the Modal from the program name
-                        promises.push(this.setValue(self.object,dataElement.name,dataValue.value));
-                        /*promises.push(this.find(dataValue.value).then(function (result) {
-                            console.log("Being Set:",dataElement.name);
-                            //Set the field in the json
-                            self.object[dataElement.name] = result;
-                        }, function (error) {
-                            console.log(error)
-                        }));*/
-                    }
-                }
+                event.dataValues.forEach(function(dataValue){
+                    promises.push(self.setValue(self.object,dataValue));
+                })
                 //Add relations to the object as specified by the relations
-                //
-                if (relations)
+                if (relations){
                     for (k = 0; k < relations.length; k++) {//For each relation
 
                         var relation = relations[k];
@@ -272,12 +284,50 @@ angular.module('iroad-relation-modal', [])
                         //Push the RefferenceProgram to hel the fetch
                         selfrenderToJSON.count.push(refProgram);
                     }
+                }
 
                 $q.all(promises).then(function () {
                     deffered.resolve(self.object);
                 }, function (error) {
                     deffered.resolve(self.object);
                 });
+                return deffered.promise;
+            },
+            save:function(programName,object){
+                var deffered = $q.defer();
+                var self = this;
+                this.getUser().then(function(user){
+                    console.log(user);
+                    var event = {
+                        orgUnit:user.organisationUnits[0].id,
+                        storedBy:user.userCredentials.username,
+                        status:"COMPLETED",
+                        dataValues:[]
+                    };
+                    self.getProgramByName(programName).then(function(program){
+                        console.log(program);
+                        event.program = program.id;
+                        program.programStages[0].programStageDataElements.forEach(function(programStageDataElement){
+                            if(object[programStageDataElement.dataElement.name]){
+                                event.dataValues.push({dataElement:programStageDataElement.dataElement.id,value:object[programStageDataElement.dataElement.name]});
+                            }
+                        });
+                        if(object.id){
+                            $http.put("/" + dhis2.settings.baseUrl + "/api/events/" + object.id,event).then(function(results){
+                                deffered.resolve(results);
+                            },function(error){
+                                deffered.reject(error);
+                            })
+                        }else{
+                            $http.post("/" + dhis2.settings.baseUrl + "/api/events",event).then(function(results){
+                                deffered.resolve(results);
+                            },function(error){
+                                deffered.reject(error);
+                            })
+                        }
+                        console.log(event);
+                    })
+                })
                 return deffered.promise;
             }
         }
