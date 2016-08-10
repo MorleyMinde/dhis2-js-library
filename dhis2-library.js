@@ -1,5 +1,6 @@
 angular.module('iroad-relation-modal', [])
     .factory("iRoadModal", function ($http, $q) {
+        downloadMetaData();
         var refferencePrefix = "Program_";
         var iRoadModal = {
             programs:[],
@@ -72,6 +73,7 @@ angular.module('iroad-relation-modal', [])
              * @return Program
              */
             getProgramByName: function (name) {
+                console.log("Program By Name:",name);
                 var deffered = $q.defer();
                 this.getPrograms().then(function(programs){
                     name = name.replace("_", " ");
@@ -146,6 +148,7 @@ angular.module('iroad-relation-modal', [])
                 }
                 console.log(additionalUrl)
                 this.getProgramByName(modalName).then(function(program){
+                    console.log("Progra Being Searched:",program.name);
                     $http.get("/" + dhis2.settings.baseUrl + "/api/events?program=" + program.id + additionalUrl).then(function (result) {
                         var events = [];
                         for (j = 0; j < result.data.events.length; j++) {//For each event render to entity column json
