@@ -1,6 +1,6 @@
 angular.module('iroad-relation-modal', [])
     .factory("iRoadModal", function ($http, $q, ProgramFactory, DHIS2EventFactory, MetaDataFactory) {
-        //var initialPromise = downloadMetaData();
+        downloadMetaData();
         var loaded = false;
         var iRoadModal = {
             refferencePrefix: "Program_",

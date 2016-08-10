@@ -161,10 +161,9 @@ function downloadMetaData(){
     promise = promise.then( getOptionSets );
     promise = promise.then( getDataElements );
     promise.done( function() {
-        def.resolve();
         dhis2.availability.startAvailabilityCheck();
     });
-    return promise;
+    def.resolve();
 }
 
 function getUserRoles()
