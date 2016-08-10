@@ -51,7 +51,7 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                         evs.events.push(ev);
                     });
 
-                    $http.post('../api/events', evs).then(function(evResponse){
+                    $http.post('../../../api/events', evs).then(function(evResponse){
                         def.resolve();
                     });
                 });
@@ -208,9 +208,9 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
         var internalGetByFilters = function(orgUnit, attributeCategoryUrl, pager, paging, ordering, filterings, format) {
             var url;
             if (format === "csv") {
-                url = '../api/events.csv?' + 'orgUnit=' + orgUnit;
+                url = '../../../api/events.csv?' + 'orgUnit=' + orgUnit;
             } else {
-                url = '../api/events.json?' + 'orgUnit=' + orgUnit;
+                url = '../../../api/events.json?' + 'orgUnit=' + orgUnit;
             }
 
             if(filterings) {
@@ -274,7 +274,7 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                 return internalGetByFilters(orgUnit, null, pager, paging, ordering, filterings);
             },
             get: function(eventUid){
-                var promise = $http.get('../api/events/' + eventUid + '.json').then(function(response){
+                var promise = $http.get('../../../api/events/' + eventUid + '.json').then(function(response){
                     return response.data;
                 }, function(){
                     var p = dhis2.ec.store.get('events', eventUid).then(function(ev){
@@ -286,7 +286,7 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                 return promise;
             },
             create: function(dhis2Event){
-                var promise = $http.post('../api/events.json', dhis2Event).then(function(response){
+                var promise = $http.post('../../../api/events.json', dhis2Event).then(function(response){
                     return response.data;
                 }, function(){
                     dhis2Event.id = dhis2.util.uid();
@@ -297,7 +297,7 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                 return promise;
             },
             delete: function(dhis2Event){
-                var promise = $http.delete('../api/events/' + dhis2Event.event).then(function(response){
+                var promise = $http.delete('../../../api/events/' + dhis2Event.event).then(function(response){
                     return response.data;
                 }, function(){
                     dhis2.ec.store.remove( 'events', dhis2Event.event );
@@ -306,7 +306,7 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                 return promise;
             },
             update: function(dhis2Event){
-                var promise = $http.put('../api/events/' + dhis2Event.event, dhis2Event).then(function(response){
+                var promise = $http.put('../../../api/events/' + dhis2Event.event, dhis2Event).then(function(response){
                     return response.data;
                 }, function(){
                     dhis2.ec.store.remove('events', dhis2Event.event);
@@ -316,7 +316,7 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                 return promise;
             },
             updateForSingleValue: function(singleValue, fullValue){
-                var promise = $http.put('../api/events/' + singleValue.event + '/' + singleValue.dataValues[0].dataElement, singleValue ).then(function(response){
+                var promise = $http.put('../../../api/events/' + singleValue.event + '/' + singleValue.dataValues[0].dataElement, singleValue ).then(function(response){
                     return response.data;
                 }, function(){
                     dhis2.ec.store.remove('events', fullValue.event);
@@ -326,7 +326,7 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                 return promise;
             },
             updateForEventDate: function(dhis2Event, fullEvent){
-                var promise = $http.put('../api/events/' + dhis2Event.event + '/updateEventDate', dhis2Event).then(function(response){
+                var promise = $http.put('../../../api/events/' + dhis2Event.event + '/updateEventDate', dhis2Event).then(function(response){
                     return response.data;
                 }, function(){
                     dhis2.ec.store.remove('events', fullEvent.event);

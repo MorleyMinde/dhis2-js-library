@@ -146,8 +146,6 @@ function ajax_login()
 }
 
 function downloadMetaData(){
-
-    console.log('Loading required meta-data');
     var def = $.Deferred();
     var promise = def.promise();
 
@@ -163,10 +161,7 @@ function downloadMetaData(){
     promise = promise.then( getOptionSets );
     promise = promise.then( getDataElements );
     promise.done( function() {
-        console.log( 'Finished loading meta-data' );
         dhis2.availability.startAvailabilityCheck();
-        console.log( 'Started availability check' );
-        //selection.responseReceived();
     });
 
     def.resolve();

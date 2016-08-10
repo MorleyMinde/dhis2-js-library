@@ -1,5 +1,5 @@
 angular.module('iroad-relation-modal', [])
-    .factory("iRoadModal", function ($http, $q) {
+    .factory("iRoadModal", function ($http, $q,ProgramFactory,DHIS2EventFactory,MetaDataFactory) {
         downloadMetaData();
         var refferencePrefix = "Program_";
         var iRoadModal = {
@@ -36,11 +36,9 @@ angular.module('iroad-relation-modal', [])
                     deffered.resolve(this.dataElements);
                 }else{
                     var self = this;
-                    $http.get("/" + dhis2.settings.baseUrl + "/api/dataElements.json?fields=id,name,displayName,valueType&paging=false").then(function (result) {
-                        self.dataElements = result.data.dataElements;
+                    MetaDataFactory.getAll("dataElements").then(function(results){
+                        self.dataElements = results;
                         deffered.resolve(self.dataElements);
-                    }, function (error) {
-                        deffered.reject(error);
                     });
                 }
                 return deffered.promise;
@@ -56,12 +54,16 @@ angular.module('iroad-relation-modal', [])
                     deffered.resolve(this.programs);
                 }else{
                     var self = this;
-                    $http.get("/" + dhis2.settings.baseUrl + "/api/programs.json?fields=id,name,displayName,programStages[programStageDataElements[sortOrder,compulsory,dataElement[id,name,valueType,optionSetValue,optionSet[id,name,valueType,options[id,name]],attributeValues[:all,attribute[id,name]]]]]&paging=false").then(function (result) {
-                        self.programs = result.data.programs;
-                        deffered.resolve(self.programs);
+                    this.getUser().then(function(user){
+                        ProgramFactory.getProgramsByOu(user.organisationUnits[0]).then(function(results){
+                            self.programs = results.programs;
+                            deffered.resolve(self.programs);
+                        }, function (error) {
+                            deffered.reject(error);
+                        })
                     }, function (error) {
                         deffered.reject(error);
-                    });
+                    })
                 }
                 return deffered.promise;
             },
@@ -73,12 +75,11 @@ angular.module('iroad-relation-modal', [])
              * @return Program
              */
             getProgramByName: function (name) {
-                console.log("Program By Name:",name);
                 var deffered = $q.defer();
                 this.getPrograms().then(function(programs){
                     name = name.replace("_", " ");
                     for (var i = 0; i < programs.length; i++) {
-                        if (programs[i].name == name) {
+                        if (programs[i].displayName == name) {
                             deffered.resolve(programs[i]);
                             return;
                         }
@@ -136,36 +137,20 @@ angular.module('iroad-relation-modal', [])
              *
              */
             getAll: function (modalName,params) {
-                console.log("Modal name:",modalName);
                 var self = this;
                 var deffered = $q.defer();
                 var promises = [];
-                var additionalUrl = "";
-                if(params){
-                    for(param in params){
-                        additionalUrl += "&" + param + "=" + params[param];
-                    }
-                }
-                console.log(additionalUrl)
                 this.getProgramByName(modalName).then(function(program){
-                    console.log("Progra Being Searched:",program.name);
-                    $http.get("/" + dhis2.settings.baseUrl + "/api/events?program=" + program.id + additionalUrl).then(function (result) {
-                        var events = [];
-                        for (j = 0; j < result.data.events.length; j++) {//For each event render to entity column json
-                            var event = result.data.events[j];
-                            //Render events to appropriate Modal
-                            promises.push(self.renderToJSON(event).then(function (object) {
-                                events.push(object);
-                            }));
-                        }
-                        //Check if all results from the server are fetched
-                        $q.all(promises).then(function () {
-                            deffered.resolve(events);
-                        });
-                    });
-                });
-
-                //Get events of the program from the server
+                    self.getUser().then(function(user){
+                        DHIS2EventFactory.getByStage(user.organisationUnits[0].id,program.programStages[0].id).then(function(results){
+                            deffered.resolve(results.events);
+                        }, function (error) {
+                            deffered.reject(error);
+                        })
+                    }, function (error) {
+                        deffered.reject(error);
+                    })
+                })
 
                 return deffered.promise;
             },
@@ -300,7 +285,6 @@ angular.module('iroad-relation-modal', [])
                 var deffered = $q.defer();
                 var self = this;
                 this.getUser().then(function(user){
-                    console.log(user);
                     var event = {
                         orgUnit:user.organisationUnits[0].id,
                         storedBy:user.userCredentials.username,
@@ -308,7 +292,6 @@ angular.module('iroad-relation-modal', [])
                         dataValues:[]
                     };
                     self.getProgramByName(programName).then(function(program){
-                        console.log(program);
                         event.program = program.id;
                         program.programStages[0].programStageDataElements.forEach(function(programStageDataElement){
                             if(object[programStageDataElement.dataElement.name]){
@@ -328,7 +311,6 @@ angular.module('iroad-relation-modal', [])
                                 deffered.reject(error);
                             })
                         }
-                        console.log(event);
                     })
                 })
                 return deffered.promise;
