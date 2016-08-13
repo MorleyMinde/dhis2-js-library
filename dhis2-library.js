@@ -170,6 +170,19 @@ angular.module('iroad-relation-modal', [])
                 });
                 return deffered.promise;
             },
+            getRelationship:function(dataElementName){
+                var self = this;
+                var deffered = $q.defer();
+                this.getProgramByName(dataElementName.replace(iRoadModal.refferencePrefix, "")).then(function (program) {
+                    program.programStages[0].programStageDataElements.forEach(function (programStageDataElement) {
+                        if (programStageDataElement.dataElement.code)
+                            if (programStageDataElement.dataElement.code.toLowerCase() == ("id_" + dataElementName.replace(iRoadModal.refferencePrefix, "").toLowerCase())) {
+                                deffered.resolve(programStageDataElement.dataElement);
+                            }
+                    })
+                })
+                return deffered.promise;
+            },
             /**
              * Gets all rows of a program
              *
@@ -216,6 +229,24 @@ angular.module('iroad-relation-modal', [])
                     dataElements.forEach(function (dataElement) {
                         event.dataValues.forEach(function (dataValue) {
                             if (dataElement.id == dataValue.dataElement && dataElement.displayName.startsWith(self.refferencePrefix)) {
+                                dataValue.value = dataValue.value.event;
+                            }
+                        })
+                    })
+                    deffered.resolve(event);
+                });
+
+                return deffered.promise;
+            },
+            setRelations: function (event) {
+                // Stores the rows of an entity
+                var deffered = $q.defer();
+                var self = this;
+                var promises = [];
+                this.getDataElements().then(function (dataElements) {
+                    dataElements.forEach(function (dataElement) {
+                        event.dataValues.forEach(function (dataValue) {
+                            if (dataElement.id == dataValue.dataElement && dataElement.displayName.startsWith(self.refferencePrefix)) {
                                 promises.push(self.setDataValueToEvent(dataValue))
                             }
                         })
@@ -249,6 +280,41 @@ angular.module('iroad-relation-modal', [])
                 }, function (error) {
                     deffered.reject(error);
                 });
+                return deffered.promise;
+            },
+            get: function (modalName, params) {
+                var self = this;
+                var deffered = $q.defer();
+                self.getProgramByName(modalName).then(function (program) {
+                    self.getUser().then(function (user) {
+                        DHIS2EventFactory.getByStage(user.organisationUnits[0].id, program.programStages[0].id).then(function (results) {
+                            if(params.filter){
+                                var events = [];
+                                results.events.forEach(function(event){
+                                    event.dataValues.some(function(dataValue){
+                                        if(dataValue.dataElement == params.filter.left){
+                                            if(params.filter.operator == "EQ" && dataValue.value == params.filter.right){
+                                                events.push(event) ;
+                                                return true;
+                                            }else if(params.filter.operator == "LIKE" && dataValue.value.indexOf(params.filter.right) > -1){
+                                                events.push(event) ;
+                                                return true;
+                                            }
+                                        }
+                                    })
+                                })
+                                deffered.resolve(events);
+                            }else{
+                                deffered.resolve(results.events);
+                            }
+                        }, function (error) {
+                            deffered.reject(error);
+                        })
+                    }, function (error) {
+                        deffered.reject(error);
+                    })
+                })
+
                 return deffered.promise;
             },
             setValue: function (object, dataValue) {
