@@ -121,6 +121,23 @@ angular.module('iroad-relation-modal', [])
                 });
                 return deffered.promise;
             },
+            getProgramById: function (id) {
+                var deffered = $q.defer();
+                this.getPrograms().then(function (programs) {
+                    for (var i = 0; i < programs.length; i++) {
+                        if (programs[i].id == id) {
+                            deffered.resolve(programs[i]);
+                            return;
+                        }
+                    }
+                    deffered.reject({
+                        status: "Program Unknown",
+                        title: "Program Unknown",
+                        message: "The program with name " + name + " specified does not exist."
+                    });
+                });
+                return deffered.promise;
+            },
             /**
              * Get a program from the list of dhis2 programs by its name
              *
@@ -171,7 +188,6 @@ angular.module('iroad-relation-modal', [])
                 return deffered.promise;
             },
             getRelationship:function(dataElementName){
-                var self = this;
                 var deffered = $q.defer();
                 this.getProgramByName(dataElementName.replace(iRoadModal.refferencePrefix, "")).then(function (program) {
                     program.programStages[0].programStageDataElements.forEach(function (programStageDataElement) {
@@ -212,6 +228,53 @@ angular.module('iroad-relation-modal', [])
                     dataValue.value = event;
                 })
             },
+            setEventToDataValue: function (dataElement,dataValuePassed) {
+
+                var deffered = $q.defer();
+                this.getRelationship(dataElement.displayName).then(function(relationDataElement){
+                    console.log(dataElement,dataValuePassed);
+                    dataValuePassed.value.dataValues.some(function(eventDataValue){
+                        if(relationDataElement.id == eventDataValue.dataElement){
+                            dataValuePassed.value = eventDataValue.dataElement;
+                            return true;
+                        }
+                    })
+                    deffered.resolve();
+                });
+                return deffered.promise;
+            },
+            initiateEvent:function(event,program){
+                var self = this;
+                var deffered = $q.defer();
+                if(program){
+
+                    this.getProgramById(program.id).then(function(program){
+                        var dataValuesToAdd = [];
+                        program.programStages[0].programStageDataElements.forEach(function(programStageDataElement){
+                            var found = false;
+                            event.dataValues.forEach(function (dataValue) {
+                                if (programStageDataElement.dataElement.id == dataValue.dataElement) {
+                                    console.log("Found:",programStageDataElement.dataElement.name);
+                                    found = true;
+                                }
+                            });
+                            if(!found){
+                                dataValuesToAdd.push({dataElement:programStageDataElement.dataElement.id})
+                            }
+                        });
+                        event.dataValues.concat(dataValuesToAdd);
+                        self.getRelations(event).then(function(newEvent){
+                            deffered.resolve(newEvent);
+                        })
+                    })
+                }else{
+                    alert("Here")
+                    self.getRelations(event).then(function(newEvent){
+                        deffered.resolve(newEvent);
+                    })
+                }
+                return deffered.promise;
+            },
             /**
              * Search events of a program
              *
@@ -229,11 +292,15 @@ angular.module('iroad-relation-modal', [])
                     dataElements.forEach(function (dataElement) {
                         event.dataValues.forEach(function (dataValue) {
                             if (dataElement.id == dataValue.dataElement && dataElement.displayName.startsWith(self.refferencePrefix)) {
-                                dataValue.value = dataValue.value.event;
+                                promises.push(self.setDataValueToEvent(dataValue))
                             }
                         })
                     })
-                    deffered.resolve(event);
+                    $q.all(promises).then(function () {
+                        deffered.resolve(event);
+                    }, function (error) {
+                        deffered.resolve(event);
+                    });
                 });
 
                 return deffered.promise;
@@ -247,10 +314,10 @@ angular.module('iroad-relation-modal', [])
                     dataElements.forEach(function (dataElement) {
                         event.dataValues.forEach(function (dataValue) {
                             if (dataElement.id == dataValue.dataElement && dataElement.displayName.startsWith(self.refferencePrefix)) {
-                                promises.push(self.setDataValueToEvent(dataValue))
+                                promises.push(self.setEventToDataValue(dataElement,dataValue));
                             }
                         })
-                    })
+                    });
                     $q.all(promises).then(function () {
                         deffered.resolve(event);
                     }, function (error) {
