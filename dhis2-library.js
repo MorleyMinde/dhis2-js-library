@@ -1,5 +1,5 @@
 angular.module('iroad-relation-modal', [])
-    .factory("iRoadModal", function ($http, $q, ProgramFactory, DHIS2EventFactory, MetaDataFactory) {
+    .factory("iRoadModal", function ($http, $q, ProgramFactory, DHIS2EventFactory, MetaDataFactory,toaster) {
         downloadMetaData();
         var loaded = false;
         var iRoadModal = {
@@ -252,12 +252,16 @@ angular.module('iroad-relation-modal', [])
                         var dataValuesToAdd = [];
                         program.programStages[0].programStageDataElements.forEach(function(programStageDataElement){
                             var found = false;
-                            event.dataValues.forEach(function (dataValue) {
-                                if (programStageDataElement.dataElement.id == dataValue.dataElement) {
-                                    console.log("Found:",programStageDataElement.dataElement.name);
-                                    found = true;
-                                }
-                            });
+                            if(event.dataValues){
+                                event.dataValues.forEach(function (dataValue) {
+                                    if (programStageDataElement.dataElement.id == dataValue.dataElement) {
+                                        console.log("Found:",programStageDataElement.dataElement.name);
+                                        found = true;
+                                    }
+                                });
+                            }else{
+                                event.dataValues = [];
+                            }
                             if(!found){
                                 dataValuesToAdd.push({dataElement:programStageDataElement.dataElement.id})
                             }
@@ -384,6 +388,40 @@ angular.module('iroad-relation-modal', [])
 
                 return deffered.promise;
             },
+            save:function(event,program){
+                var deffered = $q.defer();
+                var self = this;
+                console.log("Here");
+                this.setRelations(event).then(function(newEvent){
+                    console.log("Here1");
+                    if(newEvent.event){
+                        DHIS2EventFactory.update(newEvent).then(function(results){
+                            deffered.resolve(newEvent);
+                        },function(error){
+                            deffered.reject(error);
+                        })
+                    }else{
+                        newEvent.program = program.id;
+                        self.getUser().then(function(user){
+                            newEvent.orgUnit = user.organisationUnits[0].id;
+                            newEvent.eventDate = new Date();
+                            newEvent.storedBy = user.userCredentials.username;
+                            newEvent.status = "COMPLETED";
+                            console.log(newEvent);
+                            DHIS2EventFactory.create(newEvent).then(function(results){
+                                newEvent.event = results.response.importSummaries[0].reference;
+                                toaster.pop('success', "Saved successfully", program.displayName + " offence was successfully saved.");
+                                deffered.resolve(newEvent);
+                            },function(error){
+                                toaster.pop('error', "Failure", program.displayName + " failed to save. Please try again");
+                                deffered.reject(error);
+                            })
+                        })
+                    }
+
+                })
+                return deffered.promise;
+            },
             setValue: function (object, dataValue) {
                 var self = this;
                 var deffered = $q.defer();
@@ -452,43 +490,6 @@ angular.module('iroad-relation-modal', [])
                 }, function (error) {
                     deffered.resolve(self.object);
                 });
-                return deffered.promise;
-            },
-            save: function (programName, object) {
-                var deffered = $q.defer();
-                var self = this;
-                this.getUser().then(function (user) {
-                    var event = {
-                        orgUnit: user.organisationUnits[0].id,
-                        storedBy: user.userCredentials.username,
-                        status: "COMPLETED",
-                        dataValues: []
-                    };
-                    self.getProgramByName(programName).then(function (program) {
-                        event.program = program.id;
-                        program.programStages[0].programStageDataElements.forEach(function (programStageDataElement) {
-                            if (object[programStageDataElement.dataElement.name]) {
-                                event.dataValues.push({
-                                    dataElement: programStageDataElement.dataElement.id,
-                                    value: object[programStageDataElement.dataElement.name]
-                                });
-                            }
-                        });
-                        if (object.id) {
-                            $http.put("/" + dhis2.settings.baseUrl + "/api/events/" + object.id, event).then(function (results) {
-                                deffered.resolve(results);
-                            }, function (error) {
-                                deffered.reject(error);
-                            })
-                        } else {
-                            $http.post("/" + dhis2.settings.baseUrl + "/api/events", event).then(function (results) {
-                                deffered.resolve(results);
-                            }, function (error) {
-                                deffered.reject(error);
-                            })
-                        }
-                    })
-                })
                 return deffered.promise;
             }
         }
