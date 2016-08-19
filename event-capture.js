@@ -391,7 +391,7 @@ function getOptionSetsForDataElements( programs )
 
 function getDataElements()
 {
-    return dhis2.tracker.getBatches( dataElementIds, batchSize, null, 'dataElements', 'dataElements', '../../../api/dataElements.json', 'paging=false&fields=id,displayName,displayFormName,description', 'idb', dhis2.ec.store );
+    return dhis2.tracker.getBatches( dataElementIds, batchSize, null, 'dataElements', 'dataElements', '../../../api/dataElements.json', 'paging=false&fields=id,displayName,displayFormName,description,valueType', 'idb', dhis2.ec.store );
 }
 
 function getMetaProgramValidations( programs, programIds )
