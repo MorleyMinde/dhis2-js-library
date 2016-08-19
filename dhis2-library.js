@@ -208,7 +208,6 @@ angular.module('iroad-relation-modal', [])
             getAll: function (modalName, params) {
                 var self = this;
                 var deffered = $q.defer();
-                var promises = [];
                 self.getProgramByName(modalName).then(function (program) {
                     self.getUser().then(function (user) {
                         DHIS2EventFactory.getByStage(user.organisationUnits[0].id, program.programStages[0].id).then(function (results) {
@@ -224,18 +223,23 @@ angular.module('iroad-relation-modal', [])
                 return deffered.promise;
             },
             setDataValueToEvent: function (dataValue) {
-                return DHIS2EventFactory.get(dataValue.value).then(function (event) {
+                var deffered = $q.defer();
+                DHIS2EventFactory.get(dataValue.value).then(function (event) {
                     dataValue.value = event;
+                    deffered.resolve();
+                },function(){
+                    dataValue.value = {};
+                    deffered.resolve();
                 })
+                return deffered.promise;
             },
             setEventToDataValue: function (dataElement,dataValuePassed) {
 
                 var deffered = $q.defer();
                 this.getRelationship(dataElement.displayName).then(function(relationDataElement){
-                    console.log(dataElement,dataValuePassed);
                     dataValuePassed.value.dataValues.some(function(eventDataValue){
                         if(relationDataElement.id == eventDataValue.dataElement){
-                            dataValuePassed.value = eventDataValue.dataElement;
+                            dataValuePassed.value = eventDataValue.value;
                             return true;
                         }
                     })
@@ -255,7 +259,6 @@ angular.module('iroad-relation-modal', [])
                             if(event.dataValues){
                                 event.dataValues.forEach(function (dataValue) {
                                     if (programStageDataElement.dataElement.id == dataValue.dataElement) {
-                                        console.log("Found:",programStageDataElement.dataElement.name);
                                         found = true;
                                     }
                                 });
@@ -263,16 +266,17 @@ angular.module('iroad-relation-modal', [])
                                 event.dataValues = [];
                             }
                             if(!found){
-                                dataValuesToAdd.push({dataElement:programStageDataElement.dataElement.id})
+                                dataValuesToAdd.push({dataElement:programStageDataElement.dataElement.id,value:""})
                             }
                         });
-                        event.dataValues.concat(dataValuesToAdd);
+                        dataValuesToAdd.forEach(function(dataValueToAdd){
+                            event.dataValues.push(dataValueToAdd);
+                        })
                         self.getRelations(event).then(function(newEvent){
                             deffered.resolve(newEvent);
                         })
                     })
                 }else{
-                    alert("Here")
                     self.getRelations(event).then(function(newEvent){
                         deffered.resolve(newEvent);
                     })
@@ -318,7 +322,8 @@ angular.module('iroad-relation-modal', [])
                     dataElements.forEach(function (dataElement) {
                         event.dataValues.forEach(function (dataValue) {
                             if (dataElement.id == dataValue.dataElement && dataElement.displayName.startsWith(self.refferencePrefix)) {
-                                promises.push(self.setEventToDataValue(dataElement,dataValue));
+                                dataValue.value = dataValue.value.event;
+                                //promises.push(self.setEventToDataValue(dataElement,dataValue));
                             }
                         })
                     });
@@ -391,13 +396,13 @@ angular.module('iroad-relation-modal', [])
             save:function(event,program){
                 var deffered = $q.defer();
                 var self = this;
-                console.log("Here");
                 this.setRelations(event).then(function(newEvent){
-                    console.log("Here1");
                     if(newEvent.event){
                         DHIS2EventFactory.update(newEvent).then(function(results){
+                            toaster.pop('success', "Saved successfully", program.displayName + " was successfully saved.");
                             deffered.resolve(newEvent);
                         },function(error){
+                            toaster.pop('error', "Failure", program.displayName + " failed to save. Please try again");
                             deffered.reject(error);
                         })
                     }else{
@@ -407,10 +412,9 @@ angular.module('iroad-relation-modal', [])
                             newEvent.eventDate = new Date();
                             newEvent.storedBy = user.userCredentials.username;
                             newEvent.status = "COMPLETED";
-                            console.log(newEvent);
                             DHIS2EventFactory.create(newEvent).then(function(results){
                                 newEvent.event = results.response.importSummaries[0].reference;
-                                toaster.pop('success', "Saved successfully", program.displayName + " offence was successfully saved.");
+                                toaster.pop('success', "Saved successfully", program.displayName + " was successfully saved.");
                                 deffered.resolve(newEvent);
                             },function(error){
                                 toaster.pop('error', "Failure", program.displayName + " failed to save. Please try again");

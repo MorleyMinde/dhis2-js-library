@@ -280,10 +280,11 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
                     var p = dhis2.ec.store.get('events', eventUid).then(function(ev){
                         if(ev){
                             ev.event = eventUid;
-                            return ev;
                         }else{
                             return {};
                         }
+                    },function(error){
+                        return {};
                     });
                     return p;
                 });
