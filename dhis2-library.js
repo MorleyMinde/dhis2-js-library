@@ -325,6 +325,7 @@ angular.module('iroad-relation-modal', [])
                                 dataValue.value = dataValue.value.event;
                                 //promises.push(self.setEventToDataValue(dataElement,dataValue));
                             }else if(dataElement.id == dataValue.dataElement && dataElement.valueType == "DATE" && dataValue.value != ""){
+                                dataValue.value = new Date(dataValue.value);
                                 var month = dataValue.value.getMonth() + 1;
                                 var date = dataValue.value.getDate();
                                 dataValue.value = dataValue.value.getFullYear() +"-" + (month < 10? "0" + month:month) + "-" + (date < 10? "0" + date:date);
