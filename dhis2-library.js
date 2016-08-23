@@ -251,7 +251,6 @@ angular.module('iroad-relation-modal', [])
                 var self = this;
                 var deffered = $q.defer();
                 if(program){
-
                     this.getProgramById(program.id).then(function(program){
                         var dataValuesToAdd = [];
                         program.programStages[0].programStageDataElements.forEach(function(programStageDataElement){
@@ -341,6 +340,22 @@ angular.module('iroad-relation-modal', [])
 
                 return deffered.promise;
             },
+            getRelatedPrograms:function(programName){
+                var deffered = $q.defer();
+                this.getPrograms().then(function (programs) {
+                    var relatedPrograms = [];
+                    programs.forEach(function(program){
+                        program.programStages[0].programStageDataElements.some(function (programStageDataElement) {
+                            if (programStageDataElement.dataElement.name == iRoadModal.refferencePrefix + programName){
+                                relatedPrograms.push(program);
+                                return true;
+                            }
+                        })
+                    })
+                    deffered.resolve(relatedPrograms);
+                })
+                return deffered.promise;
+            },
             /**
              * Find events of a program by id
              *
@@ -355,9 +370,7 @@ angular.module('iroad-relation-modal', [])
                 //Get events of the program from the server
                 $http.get("/" + dhis2.settings.baseUrl + "/api/events/" + uid + ".json").then(function (result) {
                     //Render to entity column json
-                    self.renderToJSON(result.data).then(function (object) {
-                        deffered.resolve(object);
-                    });
+
                 }, function (error) {
                     deffered.reject(error);
                 });
@@ -448,56 +461,6 @@ angular.module('iroad-relation-modal', [])
                             deffered.resolve(error);
                         })
                     }
-                });
-                return deffered.promise;
-            },
-            renderToJSON: function (event, relations) {
-                var self = this;
-                var deffered = $q.defer();
-                var promises = [];
-                //Object that holds the row data
-                this.object = {};
-                this.object["id"] = event.event;
-
-                event.dataValues.forEach(function (dataValue) {
-                    promises.push(self.setValue(self.object, dataValue));
-                })
-                //Add relations to the object as specified by the relations
-                if (relations) {
-                    for (k = 0; k < relations.length; k++) {//For each relation
-
-                        var relation = relations[k];
-                        var programModal = null;
-                        if (relation.type == "ONE_MANY") {//If relationship is one to many
-                            programModal = new dhis2.data.Modal(relation.name, []);
-                        } else if (relation.type == "MANY_MANY") {//If relationship is many to many
-                            //Create modal with one to many relation with the pivot entity
-                            programModal = new dhis2.data.Modal(relation.pivot, [{
-                                "name": relation.name,
-                                "type": "ONE_MANY"
-                            }]);
-                        }
-                        //Initialize the RefferenceProgram from the program name
-                        var refProgram = new RefferenceProgram(programModal, dataValue.value);
-                        //Override the fetch function to implement a get instead of a find
-                        refProgram.fetch = function () {
-                            var selfProgram = this;
-                            this.program.get({
-                                program: self.getModalName(),
-                                value: selfrenderToJSON.object.id
-                            }, function (result) {
-                                selfrenderToJSON.object[selfProgram.program.getModalName()] = result;
-                            });
-                        }
-                        //Push the RefferenceProgram to hel the fetch
-                        selfrenderToJSON.count.push(refProgram);
-                    }
-                }
-
-                $q.all(promises).then(function () {
-                    deffered.resolve(self.object);
-                }, function (error) {
-                    deffered.resolve(self.object);
                 });
                 return deffered.promise;
             }

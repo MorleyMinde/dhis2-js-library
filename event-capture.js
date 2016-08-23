@@ -206,7 +206,7 @@ function getOrgUnitLevels()
 
 function getMetaPrograms()
 {
-    return dhis2.tracker.getTrackerObjects('programs', 'programs', '../../../api/programs.json', 'filter=programType:eq:WITHOUT_REGISTRATION&paging=false&fields=id,version,categoryCombo[id,isDefault,categories[id]],programStages[id,version,programStageSections[id],programStageDataElements[dataElement[id,code,attributeValues[value,attribute[name]],optionSet[id,version,options[id,name]]]]]', 'temp', dhis2.ec.store);
+    return dhis2.tracker.getTrackerObjects('programs', 'programs', '../../../api/programs.json', 'filter=programType:eq:WITHOUT_REGISTRATION&paging=false&fields=id,version,categoryCombo[id,isDefault,categories[id]],programStages[id,captureCoordinates,version,programStageSections[id],programStageDataElements[dataElement[id,code,attributeValues[value,attribute[name]],optionSet[id,version,options[id,name]]]]]', 'temp', dhis2.ec.store);
 }
 
 function filterMissingPrograms( programs )
@@ -308,7 +308,7 @@ function getBatchPrograms( programs, batch )
     $.ajax( {
         url: '../../../api/programs.json',
         type: 'GET',
-        data: 'fields=id,displayName,programType,version,dataEntryMethod,enrollmentDateLabel,incidentDateLabel,displayIncidentDate,ignoreOverdueEvents,categoryCombo[id,displayName,isDefault,categories[id,displayName,categoryOptions[id,displayName]]],organisationUnits[id,displayName],programStages[id,displayName,version,description,excecutionDateLabel,captureCoordinates,dataEntryForm[id,displayName,style,htmlCode,format],minDaysFromStart,repeatable,preGenerateUID,programStageSections[id,displayName,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,sortOrder,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,url,description,valueType,optionSetValue,attributeValues[value,attribute[name]],optionSet[id,options[id,name]]]]]&paging=false&filter=id:in:' + ids
+        data: 'fields=id,displayName,programType,version,dataEntryMethod,enrollmentDateLabel,incidentDateLabel,displayIncidentDate,ignoreOverdueEvents,categoryCombo[id,displayName,isDefault,categories[id,displayName,categoryOptions[id,displayName]]],organisationUnits[id,displayName],programStages[id,captureCoordinates,displayName,version,description,excecutionDateLabel,captureCoordinates,dataEntryForm[id,displayName,style,htmlCode,format],minDaysFromStart,repeatable,preGenerateUID,programStageSections[id,displayName,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,sortOrder,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,url,description,valueType,optionSetValue,attributeValues[value,attribute[name]],optionSet[id,options[id,name]]]]]&paging=false&filter=id:in:' + ids
     }).done( function( response ){
 
         if(response.programs){
