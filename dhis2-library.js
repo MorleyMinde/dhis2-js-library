@@ -199,6 +199,15 @@ angular.module('iroad-relation-modal', [])
                 })
                 return deffered.promise;
             },
+            getRelationshipDataElementByProgram:function(dataElementName,program){
+                var deffered = $q.defer();
+                program.programStages[0].programStageDataElements.forEach(function (programStageDataElement) {
+                    if(programStageDataElement.dataElement.name == dataElementName){
+                        deffered.resolve(programStageDataElement.dataElement);
+                    }
+                });
+                return deffered.promise;
+            },
             /**
              * Gets all rows of a program
              *
