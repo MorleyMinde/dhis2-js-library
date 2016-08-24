@@ -1,5 +1,5 @@
 angular.module('iroad-relation-modal', [])
-    .factory("iRoadModal", function ($http, $q, ProgramFactory, DHIS2EventFactory, MetaDataFactory,toaster) {
+    .factory("iRoadModal", function ($http, $q, ProgramFactory, DHIS2EventFactory, MetaDataFactory,FileService,toaster) {
         downloadMetaData();
         var loaded = false;
         var iRoadModal = {
@@ -321,6 +321,9 @@ angular.module('iroad-relation-modal', [])
 
                 return deffered.promise;
             },
+            getFileUrl:function(event,dataElement){
+                return "/" + dhis2.settings.baseUrl + "/api/events/files?eventUid="+event.event+"&dataElementUid=" + dataElement.id;
+            },
             setRelations: function (event) {
                 // Stores the rows of an entity
                 var deffered = $q.defer();
@@ -343,7 +346,7 @@ angular.module('iroad-relation-modal', [])
                     $q.all(promises).then(function () {
                         deffered.resolve(event);
                     }, function (error) {
-                        deffered.resolve(event);
+                        deffered.reject(error);
                     });
                 });
 
@@ -377,13 +380,41 @@ angular.module('iroad-relation-modal', [])
                 var self = this;
                 var deffered = $q.defer();
                 //Get events of the program from the server
-                $http.get("/" + dhis2.settings.baseUrl + "/api/events/" + uid + ".json").then(function (result) {
+                $http.get("/" + dhis2.settings.baseUrl + "/api/sqlViews.json?filter=name:eq:Event List").then(function (result) {
                     //Render to entity column json
-
+                    $http.get("/" + dhis2.settings.baseUrl + "/api/sqlViews/"+result.data.sqlViews[0].id+"/data.json?filter=name:eq:Event List").then(function (result) {
+                        //Render to entity column json
+                        deffered.resolve(self.transformToEvents(result.data));
+                    }, function (error) {
+                        deffered.reject(error);
+                    });
                 }, function (error) {
                     deffered.reject(error);
                 });
                 return deffered.promise;
+            },
+            transformToEvents:function(data){
+                var eventData = {
+                    events:[]
+                }
+                data.rows.forEach(function(row){
+                    var event = {};
+                    row.forEach(function(column,index){
+                        if(data.headers[index].column == "longitude" || data.headers[index].column == "latitude"){
+                            if(!event.coordinate){
+                                event.coordinate = {}
+                            }
+                            event.coordinate[data.headers[index].column] = column;
+                        }else if(data.headers[index].column == "dataValues"){
+                            event[data.headers[index].column] = eval("(" + column + ")");
+                        }else{
+                            event[data.headers[index].column] = column;
+                        }
+
+                    })
+                    eventData.events.push(event);
+                })
+                return eventData;
             },
             get: function (modalName, params) {
                 var self = this;
