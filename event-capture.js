@@ -444,6 +444,5 @@ function uploadLocalData()
         dhis2.ec.store.removeAll( 'events' );
         log( 'Successfully uploaded local events' );
         setHeaderDelayMessage( i18n_sync_success );
-        selection.responseReceived(); //notify angular
     });
 }
