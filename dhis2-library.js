@@ -26,7 +26,6 @@ angular.module('iroad-relation-modal', [])
                     promise = promise.then(getOptionSets);
                     promise = promise.then(getDataElements);
                     promise.then(function () {
-                        alert("")
                         loaded = true;
                         deffered.resolve();
                         dhis2.availability.startAvailabilityCheck();
@@ -189,6 +188,7 @@ angular.module('iroad-relation-modal', [])
             },
             getRelationship:function(dataElementName){
                 var deffered = $q.defer();
+
                 this.getProgramByName(dataElementName.replace(iRoadModal.refferencePrefix, "")).then(function (program) {
                     program.programStages[0].programStageDataElements.forEach(function (programStageDataElement) {
                         if (programStageDataElement.dataElement.code)
