@@ -376,15 +376,22 @@ angular.module('iroad-relation-modal', [])
              * @param function onResult (Callback after the result is returned)
              *
              */
-            find: function (uid) {
+            find: function (dataElement,value) {
                 var self = this;
                 var deffered = $q.defer();
                 //Get events of the program from the server
-                $http.get("/" + dhis2.settings.baseUrl + "/api/sqlViews.json?filter=name:eq:Event List").then(function (result) {
+                $http.get("/" + dhis2.settings.baseUrl + "/api/sqlViews.json?filter=name:eq:Find Event").then(function (result) {
                     //Render to entity column json
-                    $http.get("/" + dhis2.settings.baseUrl + "/api/sqlViews/"+result.data.sqlViews[0].id+"/data.json?filter=name:eq:Event List").then(function (result) {
-                        //Render to entity column json
-                        deffered.resolve(self.transformToEvents(result.data));
+                    $http.get("/" + dhis2.settings.baseUrl + "/api/sqlViews/"+result.data.sqlViews[0].id+"/data.json?var=dataElement:" + dataElement +"&var=value:" + value).then(function (result) {
+                        var eventIDs = [];
+                        result.data.rows.forEach(function(row){
+                            eventIDs.push(row[0]);
+                        })
+                        $http.get("/" + dhis2.settings.baseUrl + "/api/events.json?event=" + eventIDs.join(";")).then(function (result) {
+                            deffered.resolve(result.data.events);
+                        }, function (error) {
+                            deffered.reject(error);
+                        });
                     }, function (error) {
                         deffered.reject(error);
                     });
