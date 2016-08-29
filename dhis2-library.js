@@ -386,12 +386,17 @@ angular.module('iroad-relation-modal', [])
                         var eventIDs = [];
                         result.data.rows.forEach(function(row){
                             eventIDs.push(row[0]);
-                        })
-                        $http.get("/" + dhis2.settings.baseUrl + "/api/events.json?program="+program+"&event=" + eventIDs.join(";")).then(function (result) {
-                            deffered.resolve(result.data.events);
-                        }, function (error) {
-                            deffered.reject(error);
                         });
+                        if(eventIDs.length == 0){
+                            deffered.resolve([]);
+                        }else{
+                            $http.get("/" + dhis2.settings.baseUrl + "/api/events.json?program="+program+"&event=" + eventIDs.join(";")).then(function (result) {
+                                deffered.resolve(result.data.events);
+                            }, function (error) {
+                                deffered.reject(error);
+                            });
+                        }
+
                     }, function (error) {
                         deffered.reject(error);
                     });
