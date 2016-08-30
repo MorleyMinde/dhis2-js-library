@@ -376,7 +376,7 @@ angular.module('iroad-relation-modal', [])
              * @param function onResult (Callback after the result is returned)
              *
              */
-            find: function (dataElement,value) {
+            find: function (program,dataElement,value) {
                 var self = this;
                 var deffered = $q.defer();
                 //Get events of the program from the server
@@ -387,7 +387,7 @@ angular.module('iroad-relation-modal', [])
                         result.data.rows.forEach(function(row){
                             eventIDs.push(row[0]);
                         })
-                        $http.get("/" + dhis2.settings.baseUrl + "/api/events.json?event=" + eventIDs.join(";")).then(function (result) {
+                        $http.get("/" + dhis2.settings.baseUrl + "/api/events.json?program="+program+"&event=" + eventIDs.join(";")).then(function (result) {
                             deffered.resolve(result.data.events);
                         }, function (error) {
                             deffered.reject(error);
