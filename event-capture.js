@@ -161,6 +161,7 @@ function downloadMetaData(){
     promise = promise.then( getDataElements );
     promise.done( function() {
         dhis2.availability.startAvailabilityCheck();
+        dhis2.loadData();
     });
     def.resolve();
 }
