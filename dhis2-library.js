@@ -321,6 +321,35 @@ angular.module('iroad-relation-modal', [])
 
                 return deffered.promise;
             },
+            getRelatedEvent: function (event,program) {
+                // Stores the rows of an entity
+                var deffered = $q.defer();
+                var self = this;
+                var promises = [];
+                this.getDataElements().then(function (dataElements) {
+                    dataElements.forEach(function (dataElement) {
+                        event.dataValues.forEach(function (dataValue) {
+                            if (dataElement.id == dataValue.dataElement && dataElement.displayName == self.refferencePrefix + program.displayName) {
+                                if(dataValue.value != ""){
+                                    DHIS2EventFactory.get(dataValue.value).then(function (event) {
+                                        deffered.resolve(event);
+                                    }, function () {
+                                        deffered.resolve({});
+                                    });
+                                }
+                                promises.push(self.setDataValueToEvent(dataValue))
+                            }
+                        })
+                    })
+                    $q.all(promises).then(function () {
+
+                    }, function (error) {
+                        deffered.resolve(event);
+                    });
+                });
+
+                return deffered.promise;
+            },
             getFileUrl: function (event, dataElement) {
                 return "/" + dhis2.settings.baseUrl + "/api/events/files?eventUid=" + event.event + "&dataElementUid=" + dataElement.id;
             },
