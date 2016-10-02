@@ -33,7 +33,7 @@ angular.module('iroad-relation-modal', [])
                 }
                 return promise;
             },
-            createColumns: function(programStageDataElements) {
+            createColumns: function(programStageDataElements,noAction) {
                 var cols = [];
                 if (programStageDataElements){
                     programStageDataElements.forEach(function (programStageDataElement) {
@@ -49,12 +49,14 @@ angular.module('iroad-relation-modal', [])
                         });
                     })
                 }
-                cols.push({
-                    field: "",
-                    title: "Action",
-                    headerTitle: "Action",
-                    show: true
-                });
+                if(!noAction){
+                    cols.push({
+                        field: "",
+                        title: "Action",
+                        headerTitle: "Action",
+                        show: true
+                    });
+                }
                 return cols;
             },
             /**
