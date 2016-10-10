@@ -525,6 +525,14 @@ angular.module('iroad-relation-modal', [])
 
                 return deffered.promise;
             },
+            uploadFile: function(file){
+                var formData = new FormData();
+                formData.append('file', file);
+                var headers = {transformRequest: angular.identity, headers: {'Content-Type': undefined}};
+                return $http.post("/" + dhis2.settings.baseUrl + '/api/fileResources', formData, headers).then(function(response){
+                    return response.data;
+                });
+            },
             save: function (event, program) {
                 var deffered = $q.defer();
                 var self = this;
