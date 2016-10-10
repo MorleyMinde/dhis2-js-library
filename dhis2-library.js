@@ -37,16 +37,18 @@ angular.module('iroad-relation-modal', [])
                 var cols = [];
                 if (programStageDataElements){
                     programStageDataElements.forEach(function (programStageDataElement) {
-                        var filter = {};
-                        filter[programStageDataElement.dataElement.name.replace(" ","")] = 'text';
-                        cols.push({
-                            field: programStageDataElement.dataElement.name.replace(" ",""),
-                            title: programStageDataElement.dataElement.name,
-                            headerTitle: programStageDataElement.dataElement.name,
-                            show: programStageDataElement.displayInReports,
-                            sortable: programStageDataElement.dataElement.name.replace(" ",""),
-                            filter: filter
-                        });
+                        if(programStageDataElement.displayInReports){
+                            var filter = {};
+                            filter[programStageDataElement.dataElement.name.replace(" ","")] = 'text';
+                            cols.push({
+                                field: programStageDataElement.dataElement.name.replace(" ",""),
+                                title: programStageDataElement.dataElement.name,
+                                headerTitle: programStageDataElement.dataElement.name,
+                                show: programStageDataElement.displayInReports,
+                                sortable: programStageDataElement.dataElement.name.replace(" ",""),
+                                filter: filter
+                            });
+                        }
                     })
                 }
                 if(!noAction){
