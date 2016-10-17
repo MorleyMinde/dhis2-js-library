@@ -266,8 +266,13 @@ var eventCaptureServices = angular.module('eventCaptureServices', ['ngResource']
         };
 
         return {
-            getByStage: function(orgUnit, programStage, attributeCategoryUrl, pager, paging, format){
+            getByStage: function(orgUnit, programStage, attributeCategoryUrl, pager, paging, filters,format){
                 var filterings = [{field:'programStage',value:programStage}];
+                if(filters){
+                    Object.keys(filters).forEach(function(attribute){
+                        filterings.push({field:attribute,value:filters[attribute]});
+                    })
+                }
                 return internalGetByFilters(orgUnit, attributeCategoryUrl, pager, paging, null, filterings, format);
             },
             getByFilters: function(orgUnit, pager, paging, ordering, filterings){

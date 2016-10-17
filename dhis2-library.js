@@ -242,12 +242,13 @@ angular.module('iroad-relation-modal', [])
              * @param function onResult (Callback after the result is returned)
              *
              */
-            getAll: function (modalName, pager) {
+            getAll: function (modalName, pager,filters) {
                 var self = this;
                 var deffered = $q.defer();
+                var attributeUrl = "";
                 self.getProgramByName(modalName).then(function (program) {
                     self.getUser().then(function (user) {
-                        DHIS2EventFactory.getByStage(user.organisationUnits[0].id, program.programStages[0].id,"",pager,pager).then(function (results) {
+                        DHIS2EventFactory.getByStage(user.organisationUnits[0].id, program.programStages[0].id,attributeUrl,pager,pager,filters).then(function (results) {
                             if(pager){
                                 deffered.resolve(results);
                             }else{
